@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rail Radar</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
+
+    <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/cferdinandi/smooth-scroll@15.2.0/dist/smooth-scroll.polyfills.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+    <div class="logo-container">
+        <img src="LogoDesktop.png" alt="Rail Radar Logo">
+    </div>
+
+    <select id="actionDropdown">
+        <option value="0">-- Menü nur fur Entwickler --</option>
+        <option value="createTrack">Gleis erstellen</option>
+        <option value="saveTracks">Daten Speichern</option>
+        <option value="loadTracks">Daten Laden</option>
+        <option value="deleteTrack">Gleis Löschen</option>
+    </select>
+
+    <div class="button-container">
+        <div class="button-row">
+            <button id="btnDeleteWagon">Wagon löschen</button>
+            <button id="btnSearchWagon">Suche Wagon</button>
+            <button id="btnMoveMarkedWagons">Wagon verschieben</button>
+            <button id="btnMoveMarkedWagonsToPosition">Verschieben mit Position</button>
+            <button id="btnSetWagonToAbgestellt">Wagon Status</button>
+            <button id="btnShowStatistics" class="desktop-only">Statistik</button> 
+            <button class="desktop-only" id="legendButton">Legende</button>
+            <button id="openModalButton">Wagon Daten</button>
+		</div>
+    </div>
+
+    <div id="tracks"></div>
+
+    <div id="statisticsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Statistik</h2>
+            <div id="statisticsContent"></div>
+        </div>
+    </div>
+    
+    <div id="legendModal" class="modal">
+         <div class="modal-content">
+              <h2>Legende</h2>
+              <p><span class="color-box red"></span> Rot: Kein Status</p>
+              <p><span class="color-box purple"></span> Lila: Wagon in der Werkstatt</p>
+              <p><span class="color-box orange"></span> Orange: Abgestellter Wagon</p>
+              <p><span class="color-box pink"></span> Pink: Wagon bereit für den Ausgang</p>
+              <p><span class="color-box turquoise"></span> Türkis: Wagons für die Reinigung</p>
+              <p><span class="color-box border-multicolor"></span> Umrandung: Wagons die Zusammen gekoppelt sind</p>
+              <p><span class="color-box green"></span> Grün: Wagon Makiert</p>
+              <p><span class="color-box blue"></span> Blau: Wagon ist bereit für den Tausch</p>
+              <p><span class="color-box yellow"></span> Gelb: Gefundener Wagon</p>
+        </div>
+    </div>
+    
+    <div id="statusModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
+        <div style="width:300px; margin:200px auto; padding:20px; background:white;">
+            <h2>Wagon Status ändern</h2>
+            <button id="setStatusAbgestellt">Abgestellt</button>
+            <button id="setStatusAusgang">Ausgang</button>
+            <button id="setStatusWerkstatt">Werkstatt</button>
+            <button id="setStatusReinigung">Reinigung</button>
+            <button id="setStatusKoppeln">Koppeln</button>
+        </div>
+    
+	<div id="modalMenu" class="modal">
+		<div class="modal-content">
+			<span class="close-button">&times;</span>
+			<h2>Wagon Daten</h2>
+			<form id="wagonForm">
+			<label for="wagonNumber">Wagonnummer:</label>
+			<input type="text" id="wagonNumber" name="wagonNumber">
+			<br>
+
+			<label for="holder">Halter:</label>
+			<input type="text" id="holder" name="holder">
+			<br>
+
+			<label for="reason">Zulaufgrund:</label>
+			<input type="text" id="reason" name="reason">
+			<br>
+
+			<label for="entryDate">Eingangsdatum:</label>
+			<input type="date" id="entryDate" name="entryDate">
+			<br>
+
+			<label for="otherInfo">Sonstige Informationen:</label>
+			<textarea id="otherInfo" name="otherInfo"></textarea>
+			<br>
+
+			<input type="submit" value="Speichern">
+			</form>
+		</div>
+	</div>
+   
+	
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var actionDropdown = document.getElementById("actionDropdown");
+
+            function checkWindowSize() {
+                if (window.innerWidth <= 768) {
+                    if (actionDropdown) {
+                        actionDropdown.style.display = "none";
+                    }
+                } else {
+                    if (actionDropdown) {
+                        actionDropdown.style.display = "block";
+                    }
+                }
+            }
+
+            // Beim Laden der Seite überprüfen
+            checkWindowSize();
+
+            // Beim Skalieren des Fensters überprüfen
+            window.addEventListener("resize", checkWindowSize);
+        });
+    </script>
+    
+    <script type="module" defer src="script.js"></script>
+</body>
+
+</html>
